@@ -39,7 +39,7 @@ def DFS(numNodes, initial, goal, adjMatrix):
     while(len(frontier) != 0):
         node = frontier.pop() #stack
         visited.append(node)
-        path_to_node = (father_list, node, initial)
+        path_to_node = back(father_list, node, initial)
 
         for i in range(numNodes - 1, -1, -1):
 
@@ -63,52 +63,56 @@ def priority_queue_pop(priority_queue): #[node, cost], [node, cost],[node, cost]
             index = i
     return priority_queue.pop(index)
 
+def find_node(find_value, f):
+    for i in range(0, len(f)):
+        if f[i][0] == find_value: return i
+    return "cant find value"
+
 def UCS(numNodes, initial, goal, adjMatrix):
-    frontier = [[initial, 0]]
+    frontier = [[initial, 0, "none"]] #priority queue: node, cost, father_node
     visited = []
     # contain nodes and its fredecessor
     father_list = {initial: "none"}
     previous_node = initial #used to update father node of goal
 
     while(len(frontier) != 0):
-        node, cost = priority_queue_pop(frontier) #priority queue
-        print("goal: ", node, cost)
+        node, cost, father_node = priority_queue_pop(frontier) #chooses the lowest-cost node in frontier
         if node == goal: 
-            #father_list.update({node : previous_node})
+            father_list.update({node : father_node})
+            print(visited)
+            print(father_list)
             path = back(father_list, goal, initial)
             return visited, path
 
         visited.append(node)
         for i in range(0, numNodes):
             if adjMatrix[node][i] != 0 and (i in visited) == False:
-               
-                if  ([i, cost + adjMatrix[node][i]] in frontier) == False:
-                    frontier.append([i, cost + adjMatrix[node][i]])
+                index = find_node(i, frontier)
+                if index == "cant find value":
+                    frontier.append([i, cost + adjMatrix[node][i], node])
                     father_list.update({i : node})
-                    print("a")
+                    print(frontier, father_list)
 
                 else:
-                    index = frontier.index([i, cost + adjMatrix[node][i]])
-                    #previous_node = i #use to update father node of goal
-                    frontier[index][1] = min (frontier[index][1], cost + adjMatrix[node][i])
-                    #father_list.update({i : node})
-                    print(father_list)
-                    print("b")
-                
-                previous_node = node
+                    if frontier[index][1] > (cost + adjMatrix[node][i]):
+                        frontier[index][1] = cost + adjMatrix[node][i] #replace that frontier node with child
+                        frontier[index][2] = node
 
     return visited, "No path."
 
-def min_heuristic(L):
+def min_heuristic(L): #return node has min heuristic and it's index in frontier
+    value = -1
     index = -1
     min = 9223372036854775807
     for i in range(0, len(L)):
         if L[i][1] < min:
             min = L[i][1]
-            index = L[i][0]
-    return index
+            value = L[i][0]
+            index = i
+    return index, value
 
 def GBFS(numNodes, initial, goal, adjMatrix):
+    trash_value = 0 # unused value
     visited = []
     children_list = [] #list of successor of considered node and their heuristic
                        #[node, h(node)], [node, h(node)],...
@@ -127,7 +131,7 @@ def GBFS(numNodes, initial, goal, adjMatrix):
                 children_list.append([i, heuristic[i]]) #f(n) = h(n)
         
         # find the sucessor has min heuristic
-        next_node = min_heuristic(children_list) #next considered node
+        trash_value, next_node = min_heuristic(children_list) #next considered node
         father_list.update({next_node : node})
         node = next_node
         children_list.clear()
@@ -135,16 +139,18 @@ def GBFS(numNodes, initial, goal, adjMatrix):
     path = back(father_list, goal, initial)
     return visited, path
 
-def Astar(numNodes, initial, goal, adjMatrix):
+def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -< No repeat!!!
     visited = []
+    path_to_node = [] #avoid loop
 
     path = [] #path from initial -> considered node
     for i in range (0, numNodes):
         path.append(0)
     heuristic = adjMatrix[numNodes]
+    print(heuristic)
 
-    children_list = [] #list of successor of considered node and their cost
-                       #[node, f(node)], [node, f(node)],...
+    frontier = [] #list of hold node and their cost
+                       #[node, f(node), father_node], [node, f(node), father_node],...
 
     # contain nodes and its fredecessor
     father_list = {initial: "none"}
@@ -152,16 +158,26 @@ def Astar(numNodes, initial, goal, adjMatrix):
     while (node != goal):
         visited.append(node)
         
+        #delete node from frontier
+        index = find_node(node, frontier)
+        while index != "cant find value":
+            frontier.pop(index)
+            index = find_node(node, frontier)
+        path_to_node = back(father_list, node, initial)
+        
         #create sucessor list
-        for i in range(0, numNodes):
-            if adjMatrix[node][i] != 0:
-                path[i] += adjMatrix[node][i] #update path to that node
-                children_list.append([i, path[i] + heuristic[i]]) #f(node) = path(initial -> father_node) + h(node)
+        for i in range(numNodes-1, -1, -1):
+            if adjMatrix[node][i] != 0 and (i in path_to_node) == False:
+                path[i] = path[node] + adjMatrix[node][i] #update path to that node
+                frontier.append([i, path[i] + heuristic[i], node]) #f(node) = path(initial -> father_node) + h(node)
 
-        next_node = min_heuristic(children_list) #next considered node
-        father_list.update({next_node : node})
+                #print(node, children_list)
+        index, next_node = min_heuristic(frontier) #next considered node
+        print(index, next_node)
+        father_list.update({next_node : frontier[index][2]})
         node = next_node
-        children_list.clear()
-                
+        print("end: ", frontier)
+        print(father_list)
+
     path = back(father_list, goal, initial)
     return visited, path
