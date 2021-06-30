@@ -79,8 +79,6 @@ def UCS(numNodes, initial, goal, adjMatrix):
         node, cost, father_node = priority_queue_pop(frontier) #chooses the lowest-cost node in frontier
         if node == goal: 
             father_list.update({node : father_node})
-            print(visited)
-            print(father_list)
             path = back(father_list, goal, initial)
             return visited, path
 
@@ -91,7 +89,6 @@ def UCS(numNodes, initial, goal, adjMatrix):
                 if index == "cant find value":
                     frontier.append([i, cost + adjMatrix[node][i], node])
                     father_list.update({i : node})
-                    print(frontier, father_list)
 
                 else:
                     if frontier[index][1] > (cost + adjMatrix[node][i]):
@@ -139,7 +136,7 @@ def GBFS(numNodes, initial, goal, adjMatrix):
     path = back(father_list, goal, initial)
     return visited, path
 
-def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -< No repeat!!!
+def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
     visited = []
     path_to_node = [] #avoid loop
 
@@ -181,3 +178,38 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -< No repeat!!!
 
     path = back(father_list, goal, initial)
     return visited, path
+
+def recursive_DLS(numNodes, node, goal, adjMatrix, limit): #visited, path, CutOff
+    if( node == goal ):
+        return visited, path, False
+    if (limit == 0):
+        return True
+    else:
+        cuttOff_occurred = False
+        for i in range (0, numNodes):
+            if adjMatrix[node][i] != 0:
+                visited, path = DLS(numNodes, initial, goal, adjMatrix, limit - 1)
+            if path == "Cut off.":
+                cuttOff_occurred = True
+            elif path != "No path.":
+                return visited, path
+        if cutOff_occured == True: 
+            return visited, path
+        else: return visited, "No path."
+
+def DLS(numNodes, initial, goal, adjMatrix, limit = 100):
+    return recursive_DLS(numNodes, initial, goal, adjMatrix, limit)
+
+def IDS(numNodes, initial, goal, adjMatrix):
+    visited_result = []
+    visited = []
+    path = []
+
+    for limit in range(0, 100):
+        print("d: ", limit)
+        visited, path = DLS(numNodes, initial, goal, adjMatrix, limit)
+        if path != "No path.": 
+            return visited_result, path
+        visited_result.append(visited)
+
+    return visited_result, "No path."
