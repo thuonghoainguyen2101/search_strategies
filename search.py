@@ -27,7 +27,7 @@ def BFS(numNodes, initial, goal, adjMatrix):
                     path = back(father_list, goal, initial)
                     return visited, path
                 frontier.append(i)
-    return visited, "No path"
+    return visited, None
 
 def DFS(numNodes, initial, goal, adjMatrix):
     frontier = [initial] 
@@ -51,7 +51,7 @@ def DFS(numNodes, initial, goal, adjMatrix):
                     return visited, path
                 frontier.append(i)
                 
-    return visited, "No path."
+    return visited, None
 
 def priority_queue_pop(priority_queue): #[node, cost], [node, cost],[node, cost],...
     min = 9223372036854775807
@@ -95,7 +95,7 @@ def UCS(numNodes, initial, goal, adjMatrix):
                         frontier[index][1] = cost + adjMatrix[node][i] #replace that frontier node with child
                         frontier[index][2] = node
 
-    return visited, "No path."
+    return visited, None
 
 def min_heuristic(L): #return node has min heuristic and it's index in frontier
     value = -1
@@ -179,37 +179,66 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
     path = back(father_list, goal, initial)
     return visited, path
 
-def recursive_DLS(numNodes, node, goal, adjMatrix, limit): #visited, path, CutOff
-    if( node == goal ):
-        return visited, path, False
-    if (limit == 0):
-        return True
-    else:
-        cuttOff_occurred = False
-        for i in range (0, numNodes):
-            if adjMatrix[node][i] != 0:
-                visited, path = DLS(numNodes, initial, goal, adjMatrix, limit - 1)
-            if path == "Cut off.":
-                cuttOff_occurred = True
-            elif path != "No path.":
-                return visited, path
-        if cutOff_occured == True: 
-            return visited, path
-        else: return visited, "No path."
+def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path, on_current_path): #visited, path, CutOff
+    print(node)
+    
+    visited.append(node)
+    current_path.append(node)
+    on_current_path[node] = True
 
-def DLS(numNodes, initial, goal, adjMatrix, limit = 100):
-    return recursive_DLS(numNodes, initial, goal, adjMatrix, limit)
+    print(on_current_path)
+    if node == goal:
+        return visited, current_path
+    elif depth == 0:
+        return visited, None
+
+    cutOff_occured = False
+    children_list = []
+    # children_list = adjMatrix[node]
+    # for i in children_list:
+    for i in range(0, numNodes):
+        if adjMatrix[node][i] != 0:
+            children_list.append(i)
+
+    for i in children_list:
+        if on_current_path[i] == False:
+            visited_list, path = recursive_DLS(numNodes, i, goal, adjMatrix, depth - 1, visited, current_path, on_current_path)
+            print(visited_list)
+            if len(visited) == 0 and path is None:
+                on_current_path[current_path.pop()] = False
+
+            elif len(visited) != 0 and path is None:
+                cuttOff_occured = True
+            
+            else:
+                return visited_list, path
+
+        if cutOff_occured:
+            return visited, None
+        
+    else: return visited, None
+
+
+def DLS(numNodes, initial, goal, adjMatrix, depth = 10):
+    visited = []
+    current_path = []
+    on_current_path = []
+    for i in range(0, numNodes):
+        on_current_path.append(False)
+    print(on_current_path)
+    return recursive_DLS(numNodes, initial, goal, adjMatrix, depth, visited, current_path, on_current_path)
 
 def IDS(numNodes, initial, goal, adjMatrix):
-    visited_result = []
+    depth = 0
     visited = []
-    path = []
 
-    for limit in range(0, 100):
-        print("d: ", limit)
-        visited, path = DLS(numNodes, initial, goal, adjMatrix, limit)
-        if path != "No path.": 
-            return visited_result, path
-        visited_result.append(visited)
+    while True:
+        r_visited, path = DLS(numNodes, initial, goal, adjMatrix, depth)
+    
+        if len(r_visited) == 0: return visited, None
 
-    return visited_result, "No path."
+        visited.append(r_visited)
+        depth += 1
+
+        if path is not None:
+            return visited, path
