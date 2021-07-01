@@ -53,15 +53,16 @@ def DFS(numNodes, initial, goal, adjMatrix):
                 
     return visited, None
 
-def priority_queue_pop(priority_queue): #[node, cost], [node, cost],[node, cost],...
-    min = 9223372036854775807
-    index = -1
-    for i in range(0, len(priority_queue)):
-        #find min cost
-        if priority_queue[i][1] < min:
-            min = priority_queue[i][1]
-            index = i
-    return priority_queue.pop(index)
+def priority_queue_pop(frontier): #function sorts queue ascending, then pop the min value and return it
+    for i in range(1, len(frontier)):
+        key = frontier[i]
+        j = i-1
+        while j >=0 and key[1] < frontier[j][1] :
+                frontier[j + 1][1] = frontier[j][1]
+                j -= 1
+        frontier[j + 1] = key
+    
+    return frontier.pop(0)    
 
 def find_node(find_value, f):
     for i in range(0, len(f)):
@@ -160,7 +161,7 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
         while index != "cant find value":
             frontier.pop(index)
             index = find_node(node, frontier)
-        path_to_node = back(father_list, node, initial)
+        #path_to_node = back(father_list, node, initial)
         
         #create sucessor list
         for i in range(numNodes-1, -1, -1):
@@ -169,11 +170,17 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
                 frontier.append([i, path[i] + heuristic[i], node]) #f(node) = path(initial -> father_node) + h(node)
 
                 #print(node, children_list)
-        index, next_node = min_heuristic(frontier) #next considered node
+        min_heuristic = priority_queue_pop(frontier) #next considered node
+        next_node = min_heuristic[0]
         print(index, next_node)
-        father_list.update({next_node : frontier[index][2]})
+        print(path)
+        print(frontier)
+        print(path[next_node])
+        print(min_heuristic[1] - heuristic[node])
+        if path[next_node] == 0 or path[next_node] > (min_heuristic[1] - heuristic[node]):
+            father_list.update({next_node : min_heuristic[2]})
+        #father_list.update({next_node : frontier[index][2]})
         node = next_node
-        print("end: ", frontier)
         print(father_list)
 
     path = back(father_list, goal, initial)
