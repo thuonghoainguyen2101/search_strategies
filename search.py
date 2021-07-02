@@ -1,3 +1,5 @@
+import random
+
 def back(father_list, goal, initial):
     visited = [] #advoid loop
     path = [goal]
@@ -64,10 +66,15 @@ def priority_queue_pop(frontier): #function sorts queue ascending, then pop the 
     
     return frontier.pop(0)    
 
-def find_node(find_value, f):
+def find_node(node, f):
+    print(f)
     for i in range(0, len(f)):
-        if f[i][0] == find_value: return i
-    return "cant find value"
+        print(i, node)
+        print(f[i][0])
+        if f[i][0] == node: 
+            
+            return i
+    return "cant find node"
 
 def UCS(numNodes, initial, goal, adjMatrix):
     frontier = [[initial, 0, "none"]] #priority queue: node, cost, father_node
@@ -87,7 +94,7 @@ def UCS(numNodes, initial, goal, adjMatrix):
         for i in range(0, numNodes):
             if adjMatrix[node][i] != 0 and (i in visited) == False:
                 index = find_node(i, frontier)
-                if index == "cant find value":
+                if index == "cant find node":
                     frontier.append([i, cost + adjMatrix[node][i], node])
                     father_list.update({i : node})
 
@@ -138,55 +145,52 @@ def GBFS(numNodes, initial, goal, adjMatrix):
     return visited, path
 
 def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
-    visited = []
+    visited = [[]]
+    visited.append([])
+    node = None
+    f_node = None
     path_to_node = [] #avoid loop
 
-    path = [] #path from initial -> considered node
+    cost = [] #cost from initial -> considered node
+    path = []
+
     for i in range (0, numNodes):
-        path.append(0)
+        cost.append(0)
     heuristic = adjMatrix[numNodes]
-    print(heuristic)
 
-    frontier = [] #list of hold node and their cost
-                       #[node, f(node), father_node], [node, f(node), father_node],...
+    frontier = [[initial, heuristic[initial], [initial]]] #list of hold node and their cost
+                       #[node, f(node), path_to_node[]], [node, f(node), path_to_node[]],...
 
-    # contain nodes and its fredecessor
-    father_list = {initial: "none"}
-    node = initial #node being considered
-    while (node != goal):
-        visited.append(node)
+    
+    while (len(frontier) != 0):
         
-        #delete node from frontier
-        index = find_node(node, frontier)
-        while index != "cant find value":
-            frontier.pop(index)
-            index = find_node(node, frontier)
-        #path_to_node = back(father_list, node, initial)
+        index, node = min_heuristic(frontier)
+        node, f_node, path_to_node = frontier.pop(index)
+        while (node in visited[0]) == True and visited[1][node] <= f_node:
+            index, node = min_heuristic(frontier)
+            node, f_node, path_to_node = frontier.pop(index)
         
-        #create sucessor list
-        for i in range(numNodes-1, -1, -1):
-            if adjMatrix[node][i] != 0 and (i in path_to_node) == False:
-                path[i] = path[node] + adjMatrix[node][i] #update path to that node
-                frontier.append([i, path[i] + heuristic[i], node]) #f(node) = path(initial -> father_node) + h(node)
+        visited[0].append(node)
+        visited[1].append(f_node)
+        
+        if (node == goal):
+            return visited[0], path_to_node
+        
+        for i in range(0, numNodes, 1):
+            
+            if adjMatrix[node][i] != 0 and (i in visited[0]) == False:
+                print(i, '-' , visited)
+                path_to_node.append(i)
 
-                #print(node, children_list)
-        min_heuristic = priority_queue_pop(frontier) #next considered node
-        next_node = min_heuristic[0]
-        print(index, next_node)
-        print(path)
-        print(frontier)
-        print(path[next_node])
-        print(min_heuristic[1] - heuristic[node])
-        if path[next_node] == 0 or path[next_node] > (min_heuristic[1] - heuristic[node]):
-            father_list.update({next_node : min_heuristic[2]})
-        #father_list.update({next_node : frontier[index][2]})
-        node = next_node
-        print(father_list)
+                cost[i] = cost[node] + adjMatrix[node][i] #update path to that node
+                frontier.append([i, cost[i] + heuristic[i], path_to_node.copy()]) #f(node) = path(initial -> father_node) + h(node)
 
-    path = back(father_list, goal, initial)
-    return visited, path
+                path_to_node.pop()
 
-def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path, on_current_path): #visited, path, CutOff
+    return visited[0], None
+    
+
+def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path, on_current_path): 
     print(node)
     
     visited.append(node)
@@ -211,7 +215,7 @@ def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path,
         if on_current_path[i] == False:
             visited_list, path = recursive_DLS(numNodes, i, goal, adjMatrix, depth - 1, visited, current_path, on_current_path)
             print(visited_list)
-            if len(visited) == 0 and path is None:
+            if path is None:
                 on_current_path[current_path.pop()] = False
 
             elif len(visited) != 0 and path is None:
@@ -221,9 +225,12 @@ def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path,
                 return visited_list, path
 
         if cutOff_occured:
+            on_current_path[i] = False
             return visited, None
         
-    else: return visited, None
+    else: 
+        on_current_path[i] = False
+        return visited, None
 
 
 def DLS(numNodes, initial, goal, adjMatrix, depth = 10):
@@ -249,3 +256,31 @@ def IDS(numNodes, initial, goal, adjMatrix):
 
         if path is not None:
             return visited, path
+
+def HC(numNodes, initial, goal, adjMatrix): #first-choice hill climbing
+    heuristic = adjMatrix[numNodes]
+    current_state = 9223372036854775807
+    step = 0
+    limit = 50
+    visited = []
+    path = []
+
+    node = initial #considered node
+    visited.append(node)
+    path.append(node)
+    r_node = initial #random node
+    while (step < limit):
+        if (node == goal):
+            return visited, path
+        while (adjMatrix[node][r_node] == 0 or heuristic[r_node] >= current_state):
+            r_node = random.randint(0, numNodes - 1)
+            print(node, r_node)
+            print(current_state)
+        current_state = heuristic[r_node]
+        print(current_state)
+        visited.append(r_node)
+        path.append(r_node)
+        node = r_node
+        step += 1
+    
+    return visited, None
