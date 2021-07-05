@@ -63,8 +63,8 @@ def outputFile(visited, path, filePath):
     file.close()
 
 if __name__ == "__main__":
-    in_file = "test/input2.txt"
-    out_file = "test/output2.txt"
+    in_file = "test/input3.txt"
+    out_file = "test/output3.txt"
     numNodes, initial, goal, searchType, adjMatrix = inputFile(in_file)
     for i in range (0, 7):
         visited, path = search_type(numNodes, initial, goal, i, adjMatrix)
