@@ -66,8 +66,6 @@ if __name__ == "__main__":
     in_file = "test/input3.txt"
     out_file = "test/output3.txt"
     numNodes, initial, goal, searchType, adjMatrix = inputFile(in_file)
-    for i in range (0, 7):
-        visited, path = search_type(numNodes, initial, goal, i, adjMatrix)
-        outputFile(visited, path, out_file)
-    # visited, path = search_type(numNodes, initial, goal, searchType, adjMatrix)
-    # outputFile(visited, path, out_file)
+
+    visited, path = search_type(numNodes, initial, goal, searchType, adjMatrix)
+    outputFile(visited, path, out_file)
