@@ -1,5 +1,7 @@
 import random
 
+depth_limit = 10
+
 def back(father_list, goal, initial):
     visited = [] #advoid loop
     path = [goal]
@@ -67,10 +69,7 @@ def priority_queue_pop(frontier): #function sorts queue ascending, then pop the 
     return frontier.pop(0)    
 
 def find_node(node, f):
-    print(f)
     for i in range(0, len(f)):
-        print(i, node)
-        print(f[i][0])
         if f[i][0] == node: 
             
             return i
@@ -117,7 +116,11 @@ def min_heuristic(L): #return node has min heuristic and it's index in frontier
     return index, value
 
 def GBFS(numNodes, initial, goal, adjMatrix):
-    trash_value = 0 # unused value
+    check_visited, check_path = BFS(numNodes, initial, goal, adjMatrix)
+    if len(check_path) == 0:
+        return None, None #BFS can't find path -> neither GPFS!!!
+
+    pop_value = 0 # unused value
     visited = []
     children_list = [] #list of successor of considered node and their heuristic
                        #[node, h(node)], [node, h(node)],...
@@ -136,15 +139,17 @@ def GBFS(numNodes, initial, goal, adjMatrix):
                 children_list.append([i, heuristic[i]]) #f(n) = h(n)
         
         # find the sucessor has min heuristic
-        trash_value, next_node = min_heuristic(children_list) #next considered node
+        pop_value, next_node = min_heuristic(children_list) #next considered node
+        
         father_list.update({next_node : node})
         node = next_node
+        print(node)
         children_list.clear()
-
+    
     path = back(father_list, goal, initial)
     return visited, path
 
-def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
+def AStar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
     visited = [[]]
     visited.append([])
     node = None
@@ -179,7 +184,6 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
         for i in range(0, numNodes, 1):
             
             if adjMatrix[node][i] != 0 and (i in visited[0]) == False:
-                print(i, '-' , visited)
                 path_to_node.append(i)
 
                 cost[i] = cost[node] + adjMatrix[node][i] #update path to that node
@@ -191,13 +195,11 @@ def Astar(numNodes, initial, goal, adjMatrix): #Graph-search A* -> No repeat!!!
     
 
 def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path, on_current_path): 
-    print(node)
     
     visited.append(node)
     current_path.append(node)
     on_current_path[node] = True
 
-    print(on_current_path)
     if node == goal:
         return visited, current_path
     elif depth == 0:
@@ -205,8 +207,7 @@ def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path,
 
     cutOff_occured = False
     children_list = []
-    # children_list = adjMatrix[node]
-    # for i in children_list:
+
     for i in range(0, numNodes):
         if adjMatrix[node][i] != 0:
             children_list.append(i)
@@ -214,7 +215,6 @@ def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path,
     for i in children_list:
         if on_current_path[i] == False:
             visited_list, path = recursive_DLS(numNodes, i, goal, adjMatrix, depth - 1, visited, current_path, on_current_path)
-            print(visited_list)
             if path is None:
                 on_current_path[current_path.pop()] = False
 
@@ -233,13 +233,12 @@ def recursive_DLS(numNodes, node, goal, adjMatrix, depth, visited, current_path,
         return visited, None
 
 
-def DLS(numNodes, initial, goal, adjMatrix, depth = 10):
+def DLS(numNodes, initial, goal, adjMatrix, depth = depth_limit):
     visited = []
     current_path = []
     on_current_path = []
     for i in range(0, numNodes):
         on_current_path.append(False)
-    print(on_current_path)
     return recursive_DLS(numNodes, initial, goal, adjMatrix, depth, visited, current_path, on_current_path)
 
 def IDS(numNodes, initial, goal, adjMatrix):
@@ -249,12 +248,13 @@ def IDS(numNodes, initial, goal, adjMatrix):
     while True:
         r_visited, path = DLS(numNodes, initial, goal, adjMatrix, depth)
     
-        if len(r_visited) == 0: return visited, None
+        if len(r_visited) == 0: 
+            return visited, None
 
         visited.append(r_visited)
         depth += 1
 
-        if path is not None:
+        if path is not None or depth > depth_limit:
             return visited, path
 
 def HC(numNodes, initial, goal, adjMatrix): #first-choice hill climbing
@@ -274,10 +274,7 @@ def HC(numNodes, initial, goal, adjMatrix): #first-choice hill climbing
             return visited, path
         while (adjMatrix[node][r_node] == 0 or heuristic[r_node] >= current_state):
             r_node = random.randint(0, numNodes - 1)
-            print(node, r_node)
-            print(current_state)
         current_state = heuristic[r_node]
-        print(current_state)
         visited.append(r_node)
         path.append(r_node)
         node = r_node
